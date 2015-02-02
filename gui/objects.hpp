@@ -111,8 +111,8 @@ public:
 	virtual int SetActionPos(int x, int y, int w = 0, int h = 0);
 
 	// IsInRegion - Checks if the request is handled by this object
-	//  Return 0 if this object handles the request, 1 if not
-	virtual int IsInRegion(int x, int y) { return ((x < mActionX || x > mActionX + mActionW || y < mActionY || y > mActionY + mActionH) ? 0 : 1); }
+	//  Return 1 if this object handles the request, 0 if not
+	virtual int IsInRegion(int x, int y) { return ((x < mActionX || x >= mActionX + mActionW || y < mActionY || y >= mActionY + mActionH) ? 0 : 1); }
 
 protected:
 	int mActionX, mActionY, mActionW, mActionH;
@@ -288,9 +288,11 @@ protected:
 	std::map<int, bool> mKeys;
 
 protected:
+	enum ThreadType { THREAD_NONE, THREAD_ACTION, THREAD_CANCEL };
+
 	int getKeyByName(std::string key);
 	int doAction(Action action);
-	bool needsToRunInSeparateThread(const Action& action);
+	ThreadType getThreadType(const Action& action);
 	void simulate_progress_bar(void);
 	int flash_zip(std::string filename, int* wipe_cache);
 	void reinject_after_flash();
@@ -365,25 +367,6 @@ protected:
 	int simulate;
 };
 
-class ActionThread
-{
-public:
-	ActionThread();
-	~ActionThread();
-
-	void threadActions(GUIAction *act);
-	void run(void *data);
-private:
-	struct ThreadData
-	{
-		GUIAction *act;
-	};
-
-	pthread_t m_thread;
-	bool m_thread_running;
-	pthread_mutex_t m_act_lock;
-};
-
 class GUIConsole : public GUIObject, public RenderObject, public ActionObject
 {
 public:
@@ -403,7 +386,7 @@ public:
 	virtual int SetRenderPos(int x, int y, int w = 0, int h = 0);
 
 	// IsInRegion - Checks if the request is handled by this object
-	//  Return 0 if this object handles the request, 1 if not
+	//  Return 1 if this object handles the request, 0 if not
 	virtual int IsInRegion(int x, int y);
 
 	// NotifyTouch - Notify of a touch event
